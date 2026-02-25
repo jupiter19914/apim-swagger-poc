@@ -1,0 +1,39 @@
+# APIM Swagger POC - Git Ignore File
+
+# PowerShell specific
+*.ps1xml
+*.psd1.bak
+*.pssc.bak
+
+# Azure credentials and sensitive data
+*.publishsettings
+.azure/
+.vscode/settings.json
+
+# Generated files
+large-petstore-demo.json
+*.log
+
+# Backup files
+*-backup.ps1
+*-complex-backup.ps1
+
+# OS specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+
+# PowerShell Gallery downloads
+*.nupkg
