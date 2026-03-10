@@ -1,0 +1,82 @@
+# Azure DevOps Pipeline for APIM Swagger Import POC
+# Uses service connection for authentication
+
+trigger:
+- main
+- develop
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+- group: 'APIM-Configuration'  # Variable group with your APIM settings
+
+stages:
+- stage: Setup
+  displayName: 'Environment Setup'
+  jobs:
+  - job: Prerequisites
+    displayName: 'Setup Prerequisites'
+    steps:
+    - checkout: self
+    
+    - task: AzurePowerShell@5
+      displayName: 'Setup APIM Environment'
+      inputs:
+        azureSubscription: 'APIM-ServiceConnection'  # Replace with your service connection name
+        ScriptType: 'FilePath'
+        ScriptPath: '$(System.DefaultWorkingDirectory)/setup.ps1'
+        ScriptArguments: '-Pipeline -SkipModuleUpdate'  # Use -Pipeline flag for pipeline mode
+        azurePowerShellVersion: 'LatestVersion'
+        pwsh: true
+      env:
+        # Optional: Override config values via pipeline variables
+        APIM_SERVICE_NAME: $(APIM_SERVICE_NAME)
+        RESOURCE_GROUP_NAME: $(RESOURCE_GROUP_NAME)
+
+- stage: Provision
+  displayName: 'Provision APIM'
+  dependsOn: Setup
+  condition: succeeded()
+  jobs:
+  - job: ProvisionResources
+    displayName: 'Provision APIM Resources'
+    steps:
+    - checkout: self
+    
+    - task: AzurePowerShell@5
+      displayName: 'Provision APIM Service'
+      inputs:
+        azureSubscription: 'APIM-ServiceConnection'
+        ScriptType: 'FilePath'
+        ScriptPath: '$(System.DefaultWorkingDirectory)/provision-apim.ps1'
+        azurePowerShellVersion: 'LatestVersion'
+        pwsh: true
+      timeoutInMinutes: 60  # APIM provisioning can take 30-45 minutes
+
+- stage: Deploy
+  displayName: 'Import Swagger APIs'
+  dependsOn: Provision
+  condition: succeeded()
+  jobs:
+  - job: ImportAPIs
+    displayName: 'Import Swagger Specifications'
+    steps:
+    - checkout: self
+    
+    - task: AzurePowerShell@5
+      displayName: 'Import Large Swagger Files'
+      inputs:
+        azureSubscription: 'APIM-ServiceConnection'
+        ScriptType: 'FilePath'
+        ScriptPath: '$(System.DefaultWorkingDirectory)/import-swagger.ps1'
+        azurePowerShellVersion: 'LatestVersion'
+        pwsh: true
+      
+    - task: PublishTestResults@2
+      displayName: 'Publish API Test Results'
+      condition: succeededOrFailed()
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: '**/test-results.xml'
+        failTaskOnFailedTests: false
