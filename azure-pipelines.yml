@@ -20,6 +20,17 @@ stages:
     steps:
     - checkout: self
     
+    # Azure CLI Authentication (required for az commands in scripts)
+    - task: AzureCLI@2
+      displayName: 'Authenticate Azure CLI'
+      inputs:
+        azureSubscription: 'APIM-ServiceConnection'
+        scriptType: 'ps'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          Write-Host "✅ Azure CLI authenticated successfully"
+          az account show --output table
+
     - task: AzurePowerShell@5
       displayName: 'Setup APIM Environment'
       inputs:
@@ -44,6 +55,17 @@ stages:
     steps:
     - checkout: self
     
+    # Azure CLI Authentication
+    - task: AzureCLI@2
+      displayName: 'Authenticate Azure CLI for Provision'
+      inputs:
+        azureSubscription: 'APIM-ServiceConnection'
+        scriptType: 'ps'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          Write-Host "✅ Azure CLI authenticated for provisioning"
+          az account show --output table
+    
     - task: AzurePowerShell@5
       displayName: 'Provision APIM Service'
       inputs:
@@ -63,6 +85,19 @@ stages:
     displayName: 'Import Swagger Specifications'
     steps:
     - checkout: self
+    
+    # Azure CLI Authentication - CRITICAL for import-swagger.ps1
+    - task: AzureCLI@2
+      displayName: 'Authenticate Azure CLI for Import'
+      inputs:
+        azureSubscription: 'APIM-ServiceConnection'
+        scriptType: 'ps'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          Write-Host "✅ Azure CLI authenticated for API import"
+          az account show --output table
+          Write-Host "🔍 Verifying APIM access..."
+          az apim list --output table
     
     - task: AzurePowerShell@5
       displayName: 'Import Large Swagger Files'
