@@ -99,14 +99,15 @@ stages:
           Write-Host "🔍 Verifying APIM access..."
           az apim list --output table
     
-    - task: AzurePowerShell@5
+    - task: AzureCLI@2
       displayName: 'Import Large Swagger Files'
       inputs:
         azureSubscription: 'APIM-ServiceConnection'
-        ScriptType: 'FilePath'
-        ScriptPath: '$(System.DefaultWorkingDirectory)/import-swagger.ps1'
-        azurePowerShellVersion: 'LatestVersion'
-        pwsh: true
+        scriptType: 'pscore'
+        scriptLocation: 'scriptPath'
+        scriptPath: '$(System.DefaultWorkingDirectory)/import-swagger.ps1'
+        # Keeps the OIDC token refreshed during long-running imports
+        visibleAzLogin: true
       
     - task: PublishTestResults@2
       displayName: 'Publish API Test Results'
